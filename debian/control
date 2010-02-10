@@ -7,7 +7,7 @@ Standards-Version: 3.7.2
 
 Package: netmon
 Architecture: all
-Depends: python2.5, python-dbus, python2.5-gtk2
+Depends: python2.5, python-dbus, python2.5-gtk2, python-hildon
 Description: Very simple Net Monitor application for maemo.
  Shows cell ID, LAC, network code, supportet wireless services, battery status etc.
 XSBC-Bugtracker: XSBC-Bugtracker: http://bugs.maemo.org

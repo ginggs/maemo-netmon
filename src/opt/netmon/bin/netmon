@@ -55,15 +55,14 @@ class ReadSensors(threading.Thread):
 		full = gn_battery.BatteryLevelFull()
 		unit = gn_battery.BatteryLevelUnit()
 
-		label1.set_text("%s: %i of %i" % (unit.capitalize(), current, full))
+		label1.set_text("%s: %i of %i" % (unit.capitalize(), current, design))
 
 		current = gn_battery.BatteryReportingCurrent()
 		design = gn_battery.BatteryReportingDesign()
 		full = gn_battery.BatteryReportingFull()
-		if (full == 0): full = design
 		unit = gn_battery.BatteryReportingUnit()
 		label2.set_text("Percentage: %i %%" % gn_battery.BatteryPercent())
-		label3.set_text("Capacity: %i %s of %i %s" % (current, unit, full, unit))
+		label3.set_text("Capacity: %i %s of %i %s" % (current, unit, design, unit))
 
 		current = gn_battery.BatteryVoltageCurrent()
 		design = gn_battery.BatteryVoltageDesign()
@@ -91,7 +90,7 @@ class ReadSensors(threading.Thread):
 		label1.set_text("")
 		label2.set_text("NetMon Version 0.1")
 		label3.set_text("")
-		label4.set_text("Written by spag 2010")
+		label4.set_text("(c) maemo@golwen.net 2010")
 		label5.set_text("netmon.garage.maemo.org")
 		label6.set_text("")
 		

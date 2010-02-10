@@ -1,5 +1,5 @@
-netmon (0.0.1-1) stable; urgency=low
+netmon (0.0.1-2) stable; urgency=low
 
-  initial release
+  repackaging
 
- -- spag <maemo@golwen.net>  Wed, 10 Feb 2010 14:30:30 +0000
+ -- spag <maemo@golwen.net>  Wed, 10 Feb 2010 15:12:56 +0000

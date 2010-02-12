@@ -1,17 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import gtk
+import hildon
 import threading
 import time
 import sys
-import gtk
-import hildon
-import gn_battery
 import gn_cellinfo
+import gn_battery
 
 class ReadSensors(threading.Thread):
-	global page, label1, label2, label3, label4, label5, label6
-
+	global cell_label
+	global battery_label
+	global battery_progress
+	global ss_progress
+	global subwin
+	
 	def Cellular(self):
+
 		regstatus = gn_cellinfo.RegStatus()
 		signalstrength = gn_cellinfo.SignalStrength()
 
@@ -33,11 +38,6 @@ class ReadSensors(threading.Thread):
 		elif (regstatus[5] == 2): network_type = 'forbidden'
 		elif (regstatus[5] == 2): network_type = 'other'
 		else: network_type = 'no network'
-			
-		label1.set_text("Network Status: %s  Type: %s" % (status, network_type))
-		label2.set_text("Location Area Code: %i" % regstatus[1])
-		label3.set_text("Cell ID: %i" % regstatus[2])
-		label4.set_text("Mobile Country Code: %i  Mobile Network Code: %i" % (regstatus[4], regstatus[3]))
 
 		services = ""
 		if (regstatus[6] & 0x02): services += 'CS '
@@ -45,145 +45,326 @@ class ReadSensors(threading.Thread):
 		if (regstatus[6] & 0x04): services += 'EGPRS '
 		if (regstatus[6] & 0x08): services += 'HSDPA '
 		if (regstatus[6] & 0x10): services += 'HSUPA'
-			
-		label5.set_text("Net Err: %i  Supported Services: %s" % (regstatus[7], services))
-		label6.set_text("Signal Strength: %i dBm" % signalstrength[1] )
+
+		fraction = 1.0 / 100 * signalstrength[0]
+
+		ss_progress.set_fraction(fraction)
+		text = " - %d dBm" % signalstrength[1]
+		ss_progress.set_text(text)
+
+		cell_label[10].set_text("%i" % regstatus[4])
+		cell_label[11].set_text("%i" % regstatus[3])
+		cell_label[12].set_text("%i" % regstatus[1])
+		cell_label[13].set_text("%i" % regstatus[2])
+		cell_label[14].set_text(status)
+		cell_label[15].set_text(network_type)
+		cell_label[16].set_text("%i" % regstatus[7])
+		cell_label[17].set_text(services)
 
 	def Battery(self):
-		current = gn_battery.BatteryLevelCurrent()
-		design = gn_battery.BatteryLevelDesign()
-		full = gn_battery.BatteryLevelFull()
-		unit = gn_battery.BatteryLevelUnit()
 
-		label1.set_text("%s: %i of %i" % (unit.capitalize(), current, design))
+		if (gn_battery.BatteryPresent() == 0): present = "not present"
+		else: present = "present"
+
+		if (gn_battery.BatteryRechargeable() == 0): rechargeable = "not rechargeable"
+		else: rechargeable = "rechargeable"
+
+		battery_label[2].set_text("%s" % present)
+		battery_label[3].set_text("%s" % rechargeable)
+
+		battery_label[12].set_text("%s" % gn_battery.BatteryLevelState())
+
+		charging = gn_battery.BatteryCharging()
+		discharging = gn_battery.BatteryDischarging()
+
+		if (charging and discharging): charging_state = "charging+discharging"
+		elif (charging): charging_state = "charging"
+		elif (discharging): charging_state = "discharging"
+		else: charging_state = "unknown"
+		
+		battery_label[13].set_text("%s" % charging_state)
 
 		current = gn_battery.BatteryReportingCurrent()
 		design = gn_battery.BatteryReportingDesign()
-		full = gn_battery.BatteryReportingFull()
 		unit = gn_battery.BatteryReportingUnit()
-		label2.set_text("Percentage: %i %%" % gn_battery.BatteryPercent())
-		label3.set_text("Capacity: %i %s of %i %s" % (current, unit, design, unit))
 
+		if (charging):
+			battery_label[22].set_text("(%i %s)" % (current, unit))
+			battery_progress[1].pulse()
+			battery_progress[1].set_pulse_step(0.1)
+			battery_progress[1].set_text("charging...")
+		else:
+			battery_label[22].set_text("%i %s" % (current, unit))
+			battery_progress[1].set_fraction(1.0 / design * current)
+			text = " %d %%" % (100.0 / design * current)
+			battery_progress[1].set_text(text)
+
+		battery_label[23].set_text("%i %s" % (design, unit))
+		
 		current = gn_battery.BatteryVoltageCurrent()
-		design = gn_battery.BatteryVoltageDesign()
-		unit = gn_battery.BatteryVoltageUnit()
+		design_v = gn_battery.BatteryVoltageDesign()
+		unit_v = gn_battery.BatteryVoltageUnit()
 
-		label4.set_text("Voltage: %i %s of %i %s" % (current, unit, design, unit))
+		battery_label[32].set_text("%i %s" % (current, unit_v))
+		battery_label[33].set_text("%i %s" % (design_v, unit_v))
 
-		if (gn_battery.BatteryCharging() == 0): charging = "no"
-		else: charging = "yes"
+		battery_progress[2].set_fraction(1.0 / design_v * current)
+		text = " %d %%" % (100.0 / design_v * current)
+		battery_progress[2].set_text(text)
 
-		if (gn_battery.BatteryDischarging() == 0): discharging = "no"
-		else: discharging = "yes"
-			
-		label5.set_text("Charging: %s  Discharging: %s" % (charging, discharging))
+		amps_full = gn_battery.BatteryReportingFull()
+		level_full = gn_battery.BatteryLevelFull()
+		level_unit = gn_battery.BatteryLevelUnit()
 
-		if (gn_battery.BatteryPresent() == 0): present = "no"
-		else: present = "yes"
-				
-		if (gn_battery.BatteryRechargeable() == 0): rechargeable = "no"
-		else: rechargeable = "yes"
-		
-		label6.set_text("Battery Present: %s  Rechargeable: %s" % (present, rechargeable))
+		battery_label[42].set_text("%i %s" % (amps_full, unit))
+		battery_label[43].set_text("%i %s" % (level_full, level_unit))
 
-	def About(self):
-		label1.set_text("")
-		label2.set_text("NetMon Version 0.1")
-		label3.set_text("")
-		label4.set_text("(c) maemo@golwen.net 2010")
-		label5.set_text("netmon.garage.maemo.org")
-		label6.set_text("")
-		
+		battery_progress[3].set_fraction(1.0 / design * amps_full)
+		text = " %d %%" % (100.0 / design * amps_full)
+		battery_progress[3].set_text(text)
+
 	stopthread = threading.Event()
 
 	def run(self):
+		proc = 0
+		page = None
 		while not self.stopthread.isSet() :
 			gtk.gdk.threads_enter()
-			if (page == "Cellular"): self.Cellular()
-			elif (page == "Battery"): self.Battery()
-			else: self.About()
+			if (subwin == False or subwin.get_stack() == None):
+				if (page != None):
+					proc = 0
+					page = None
+				if (proc == 0):
+					cell_label[0].set_text("%s" % time.asctime())
+					self.Cellular()
+			else:
+				title = subwin.get_title()
+				if (page != title):
+					proc = 0
+					page = title
+				if (title == "NetMon Battery Status"):
+					if (proc == 0): self.Battery()
 			gtk.gdk.threads_leave()
-
-			time.sleep(3)
+			time.sleep(0.2)
+			if (proc > 15): proc = 0
+			else: proc = proc + 1
 
 	def stop(self):
 		self.stopthread.set()
+
+def battery_window(nope):
+	global subwin
+	global battery_label
+	global battery_progress
 	
-def menu_button_clicked(button):
-	global page
+	subwin = hildon.StackableWindow()
+	subwin.set_title("NetMon Battery Status")
+
+	battery_label = []
+	battery_progress = []
+
+	for i in range(1, 50):
+		battery_label.append(None)
+		battery_progress.append(None)
+
+	battery_label[1] = gtk.Label("Battery Presence:")
+	battery_label[2] = gtk.Label("?")
+	battery_label[3] = gtk.Label("?")
+
+	battery_label[11] = gtk.Label("Charging Status:")
+	battery_label[12] = gtk.Label("?")
+	battery_label[13] = gtk.Label("?")
+
+	battery_label[21] = gtk.Label("Capacity:")
+	battery_label[22] = gtk.Label("?")
+	battery_label[23] = gtk.Label("?")
 	
-	buttonlabel = button.get_label()
-	page = buttonlabel
+	battery_label[31] = gtk.Label("Voltage:")
+	battery_label[32] = gtk.Label("?")
+	battery_label[33] = gtk.Label("?")
+
+	battery_label[41] = gtk.Label("Last Full:")
+	battery_label[42] = gtk.Label("?")
+	battery_label[43] = gtk.Label("?")
+
+	for i in range(1, 20, 10):
+		battery_label[i].set_alignment(0, 0)
+		battery_label[i+1].set_alignment(1, 0)
+		battery_label[i+2].set_alignment(1, 0)
+
+	for i in range(21, 50, 10):
+		battery_label[i].set_alignment(0, 1)
+		battery_label[i+1].set_alignment(1, 1)
+		battery_label[i+2].set_alignment(1, 1)
+
 	
-def main_menu(label):
+
+	battery_progress[1] = gtk.ProgressBar(adjustment=None)
+	battery_progress[1].set_orientation(gtk.PROGRESS_LEFT_TO_RIGHT)
+	battery_progress[1].set_text("acquiring battery info...")
+
+	battery_progress[2] = gtk.ProgressBar(adjustment=None)
+	battery_progress[2].set_orientation(gtk.PROGRESS_LEFT_TO_RIGHT)
+	battery_progress[2].set_text("acquiring battery info...")
+
+	battery_progress[3] = gtk.ProgressBar(adjustment=None)
+	battery_progress[3].set_orientation(gtk.PROGRESS_LEFT_TO_RIGHT)
+	battery_progress[3].set_text("acquiring battery info...")
+	
+	table = gtk.Table(12,20,True)
+
+	table.attach(battery_label[1], 1, 7, 1, 2)
+	table.attach(battery_label[2], 7, 12, 1, 2)
+	table.attach(battery_label[3], 12, 19, 1, 2)
+
+	table.attach(battery_label[11], 1, 7, 2, 3)
+	table.attach(battery_label[12], 7, 12, 2, 3)
+	table.attach(battery_label[13], 12, 19, 2, 3)
+
+	table.attach(battery_label[21], 1, 7, 3, 4)
+	table.attach(battery_label[22], 7, 12, 3, 4)
+	table.attach(battery_label[23], 12, 19, 3, 4)
+
+	table.attach(battery_progress[1], 1, 19, 4, 6)
+	
+	table.attach(battery_label[31], 1, 7, 6, 7)
+	table.attach(battery_label[32], 7, 12, 6, 7)
+	table.attach(battery_label[33], 12, 19, 6, 7)
+	
+	table.attach(battery_progress[2], 1, 19, 7, 9)
+
+	table.attach(battery_label[41], 1, 7, 9, 10)
+	table.attach(battery_label[42], 7, 12, 9, 10)
+	table.attach(battery_label[43], 12, 19, 9, 10)
+
+	table.attach(battery_progress[3], 1, 19, 10, 12)
+	#table.set_col_spacing(1, 1)
+
+	subwin.add(table)
+
+	subwin.show_all()
+
+def about_window(nope):
+	global subwin
+
+	version = "0.0.2"
+	
+	subwin = hildon.StackableWindow()
+	subwin.set_title("NetMon About")
+	
+	text = "NetMon Cellular Network Monitor\nVersion %s\n(c) Copyright by spag (maemo@golwen.net) 2010\nUse at your own risk!" % version
+	label = gtk.Label(text)
+	subwin.add(label)
+	subwin.show_all()
+
+def create_menu():
 	menu = hildon.AppMenu()
 
-	button = hildon.GtkRadioButton(gtk.HILDON_SIZE_AUTO, None)
-	button.set_label("Cellular")
-	button.connect("clicked", menu_button_clicked)
-	menu.add_filter(button)
-	button.set_mode(False)
+	button1 = hildon.GtkButton(gtk.HILDON_SIZE_AUTO)
+	button1.set_label("Battery")
+	button1.connect("clicked", battery_window)
+	menu.append(button1)
+
+	button2 = hildon.GtkButton(gtk.HILDON_SIZE_AUTO)
+	button2.set_label("About")
+	button2.connect("clicked", about_window)
+	menu.append(button2)
 	
-	button = hildon.GtkRadioButton(gtk.HILDON_SIZE_AUTO, button)
-	button.set_label("Battery")
-	button.connect("clicked", menu_button_clicked)
-	menu.add_filter(button)
-	button.set_mode(False)
-	
-	button = hildon.GtkRadioButton(gtk.HILDON_SIZE_AUTO, button)
-	button.set_label("About")
-	button.connect("clicked", menu_button_clicked)
-	menu.add_filter(button)
-	button.set_mode(False)
 	menu.show_all()
-	
+
 	return menu
+
 
 def main_quit(obj, sensor_thread):
 	sensor_thread.stop()
 	gtk.main_quit()
 
 def main():
+	global ss_absolute
+	global ss_progress
+	global cell_label
+	global subwin
 
-	global page, label1, label2, label3, label4, label5, label6
-
-	page = "Cellular"
+	subwin = False
+	program_version = "0.0.2"
+	cell_label = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+	
+	prog = hildon.Program.get_instance()
 	
 	win = hildon.StackableWindow()
-	win.set_title("NetMon")
+	win.set_title("NetMon Cell Info")
+
+	cell_label[0] = gtk.Label("CELL INFO")
+	cell_label[0].set_padding(0, 10)
+	ss_progress = gtk.ProgressBar(adjustment=None)
+	ss_progress.set_orientation(gtk.PROGRESS_LEFT_TO_RIGHT)
 	
-	label1 = gtk.Label("label1")
-	label2 = gtk.Label("label2")
-	label3 = gtk.Label("label3")
-	label4 = gtk.Label("label4")
-	label5 = gtk.Label("label5")
-	label6 = gtk.Label("label6")
+	ss_progress.set_text("acquiring signal strength...")
+	cell_label[1] = gtk.Label("Signal")
+	cell_label[2] = gtk.Label("Mobile Country Code")
+	cell_label[3] = gtk.Label("Mobile Network Code")
+	cell_label[4] = gtk.Label("Location Area Code")
+	cell_label[5] = gtk.Label("Cell ID")
+	cell_label[6] = gtk.Label("Network Status")
+	cell_label[7] = gtk.Label("Network Type")
+	cell_label[8] = gtk.Label("Network Error")
+	cell_label[9] = gtk.Label("Supported Services")
 	
-	label1.set_justify(gtk.JUSTIFY_CENTER)
-	label2.set_justify(gtk.JUSTIFY_CENTER)
+	cell_label[10] = gtk.Label("?")
+	cell_label[11] = gtk.Label("?")
+	cell_label[12] = gtk.Label("?")
+	cell_label[13] = gtk.Label("?")
+	cell_label[14] = gtk.Label("?")
+	cell_label[15] = gtk.Label("?")
+	cell_label[16] = gtk.Label("?")
+	cell_label[17] = gtk.Label("?")
+
+	for i in range(2, 10):
+		cell_label[i].set_alignment(0, 0.5)
+	for i in range(10, 18):
+		cell_label[i].set_alignment(1, 0.5)
+
+	table = gtk.Table(7,7,True)
+	table.attach(cell_label[2], 1, 4, 0, 1)
+	table.attach(cell_label[3], 1, 4, 1, 2)
+	table.attach(cell_label[4], 1, 4, 2, 3)
+	table.attach(cell_label[5], 1, 4, 3, 4)
+	table.attach(cell_label[6], 1, 4, 4, 6)
+	table.attach(cell_label[7], 1, 4, 5, 7)
+	table.attach(cell_label[8], 1, 4, 6, 9)
+	table.attach(cell_label[9], 1, 4, 7, 10)
 	
-	vbox = gtk.VBox(False, 10)
+	table.attach(cell_label[10], 4, 6, 0, 1)
+	table.attach(cell_label[11], 4, 6, 1, 2)
+	table.attach(cell_label[12], 4, 6, 2, 3)
+	table.attach(cell_label[13], 4, 6, 3, 4)
+	table.attach(cell_label[14], 4, 6, 4, 6)
+	table.attach(cell_label[15], 4, 6, 5, 7)
+	table.attach(cell_label[16], 4, 6, 6, 9)
+	table.attach(cell_label[17], 4, 6, 7, 10)
+	table.set_col_spacing(1, 20)
 	
-	vbox.pack_start(label1, True, True, 0)
-	vbox.pack_start(label2, True, True, 0)
-	vbox.pack_start(label3, True, True, 0)
-	vbox.pack_start(label4, True, True, 0)
-	vbox.pack_start(label5, True, True, 0)
-	vbox.pack_start(label6, True, True, 0)
-	
-	menu = main_menu(label1)
-	win.set_app_menu(menu)
+	hbox = gtk.HBox(False, 10)
+	vbox = gtk.VBox(False, 0)
+	hbox.pack_start(cell_label[1], False, False, 0)
+	hbox.pack_end(ss_progress, True, True, 0)
+	vbox.pack_start(cell_label[0], False, False, 0)
+	vbox.pack_start(table, False, False, 0)
+	vbox.pack_end(hbox, False, False, 0)
 	win.add(vbox)
+
+	menu = create_menu()
+	win.set_app_menu(menu)
 
 	sensor_thread = ReadSensors()
 	sensor_thread.start()
-
+	
+	
 	win.connect("destroy", main_quit, sensor_thread)
 	
 	win.show_all()
-	
-	gtk.main()
 
+	gtk.main()
 
 gtk.gdk.threads_init()
 if __name__ == "__main__":

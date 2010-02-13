@@ -55,7 +55,13 @@ class ReadSensors(threading.Thread):
 		cell_label[10].set_text("%i" % regstatus[4])
 		cell_label[11].set_text("%i" % regstatus[3])
 		cell_label[12].set_text("%i" % regstatus[1])
-		cell_label[13].set_text("%i" % regstatus[2])
+		cell_id = regstatus[2] & 65535
+		cell_rnc = regstatus[2] >> 16
+		
+		if (cell_rnc): cell_label[18].set_text("(RNC %i)" % (cell_rnc))
+		else: cell_label[18].set_text("")
+		
+		cell_label[13].set_text("%i" % cell_id)
 		cell_label[14].set_text(status)
 		cell_label[15].set_text(network_type)
 		cell_label[16].set_text("%i" % regstatus[7])
@@ -220,7 +226,7 @@ def battery_window(nope):
 	table.attach(battery_label[11], 1, 7, 2, 3)
 	table.attach(battery_label[12], 7, 12, 2, 3)
 	table.attach(battery_label[13], 12, 19, 2, 3)
-
+	
 	table.attach(battery_label[21], 1, 7, 3, 4)
 	table.attach(battery_label[22], 7, 12, 3, 4)
 	table.attach(battery_label[23], 12, 19, 3, 4)
@@ -287,7 +293,9 @@ def main():
 
 	subwin = False
 	program_version = "0.0.2"
-	cell_label = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+	cell_label = []
+	for i in range(1, 20):
+		cell_label.append(None)
 	
 	prog = hildon.Program.get_instance()
 	
@@ -318,12 +326,15 @@ def main():
 	cell_label[15] = gtk.Label("?")
 	cell_label[16] = gtk.Label("?")
 	cell_label[17] = gtk.Label("?")
+	cell_label[18] = gtk.Label("?")
 
 	for i in range(2, 10):
 		cell_label[i].set_alignment(0, 0.5)
-	for i in range(10, 18):
+	for i in range(10, 19):
 		cell_label[i].set_alignment(1, 0.5)
 
+	cell_label[18].set_alignment(0, 0.5)
+	
 	table = gtk.Table(7,7,True)
 	table.attach(cell_label[2], 1, 4, 0, 1)
 	table.attach(cell_label[3], 1, 4, 1, 2)
@@ -338,6 +349,7 @@ def main():
 	table.attach(cell_label[11], 4, 6, 1, 2)
 	table.attach(cell_label[12], 4, 6, 2, 3)
 	table.attach(cell_label[13], 4, 6, 3, 4)
+	table.attach(cell_label[18], 3, 5, 3, 4)
 	table.attach(cell_label[14], 4, 6, 4, 6)
 	table.attach(cell_label[15], 4, 6, 5, 7)
 	table.attach(cell_label[16], 4, 6, 6, 9)

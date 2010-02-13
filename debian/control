@@ -8,6 +8,6 @@ Standards-Version: 3.7.2
 Package: netmon
 Architecture: all
 Depends: python2.5, python-dbus, python2.5-gtk2, python-hildon
-Description: NetMon Cellular Netwirk Monitor for Maemo.
- Shows Signal Strength, Cell ID, LAC, Network Code, etc.
+Description: NetMon Cellular Network Monitor for Maemo.
+ Shows Signal Strength in dBm, Cell ID, LAC, RNC, Network Code, etc.
 XSBC-Bugtracker: XSBC-Bugtracker: http://bugs.maemo.org

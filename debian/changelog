@@ -1,5 +1,5 @@
-netmon (0.0.2-1) stable; urgency=low
+netmon (0.0.3-1) stable; urgency=low
 
-  Complete rewrite
+  Split Cell-ID value to RNC and Cell ID for 3G networks
 
- -- spag <maemo@golwen.net>  Fri, 12 Feb 2010 11:59:56 +0000
+ -- spag <maemo@golwen.net>  Sat, 13 Feb 2010 12:11:14 +0000

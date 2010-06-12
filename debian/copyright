@@ -1,11 +1,11 @@
-This package was py2debianized(0.5.3) by spag <maemo@golwen.net> on
-Sat, 13 Feb 2010 12:11:14 +0000.
+This package was py2debianized(0.5.3) by Peter Kozak <maemo@golwen.net> on
+Sat, 12 Jun 2010 18:12:06 +0000.
 
 It was downloaded from 
 
-Upstream Author: spag <maemo@golwen.net>
+Upstream Author: Peter Kozak <maemo@golwen.net>
 
-Copyright: 2010 by spag
+Copyright: 2010 by Peter Kozak
 
 License:
 
@@ -28,7 +28,7 @@ On Debian systems, the complete text of the GNU General
 Public License can be found in `/usr/share/common-licenses/GPL'.
 
 
-The Debian packaging is (C) 2010, spag <maemo@golwen.net> and
+The Debian packaging is (C) 2010, Peter Kozak <maemo@golwen.net> and
 is licensed under the GPL, see above.
 
 # Please also look if there are files or directories which have a

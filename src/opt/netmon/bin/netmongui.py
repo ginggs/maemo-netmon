@@ -13,6 +13,7 @@ from threading import Thread
 from time import sleep, time
 from cellinfo import CellInfo
 from battery import Battery
+from sys import exit
 
 class StatusUpdates(Thread):
 	global window
@@ -28,6 +29,7 @@ class StatusUpdates(Thread):
 		self.battery = batterystatus
 
 	def set_signal_strength(self, percent, decibel):
+		self.cell['cellinfo']['signal']['value'].set_text('%d %%' % percent)
 		fraction = 1.0 / 100 * percent
 		text = " - %d dBm" % decibel
 		self.cell['signalbar'].set_fraction(fraction)
@@ -133,14 +135,21 @@ class StatusUpdates(Thread):
 
 		self.battery['charging']['value2'].set_text(charging_state)
 
-	def set_batt_capacity(self, current, design, percent, unit):
-		self.battery['capacity']['value1'].set_text('%d %s' % (current, unit))
+	def set_batt_capacity(self, current, design, percent, unit, charging = False):
+
 		self.battery['capacity']['value2'].set_text('%d %s' % (design, unit))
 
-		fraction = 1.0 / 100 * percent
-		text = '%d %%' % percent
-		self.battery['capacity']['bar'].set_fraction(fraction)
-		self.battery['capacity']['bar'].set_text(text)
+		if (charging):
+			self.battery['capacity']['value1'].set_text('(%d %s)' % (current, unit))
+			self.battery['capacity']['bar'].pulse()
+			self.battery['capacity']['bar'].set_pulse_step(0.1)
+			self.battery['capacity']['bar'].set_text("charging...")
+		else:
+			self.battery['capacity']['value1'].set_text('%d %s' % (current, unit))
+			fraction = 1.0 / 100 * percent
+			text = '%d %%' % percent
+			self.battery['capacity']['bar'].set_fraction(fraction)
+			self.battery['capacity']['bar'].set_text(text)
 		
 
 	def set_batt_voltage(self, current, design, unit):
@@ -209,14 +218,28 @@ class StatusUpdates(Thread):
 
 			elif (read_data == 2):
 				gtk.gdk.threads_enter()
+				charging = battery.charging()
 				self.set_batt_presence(battery.present(), battery.rechargeable())
-				self.set_batt_charging(battery.level_state(), battery.charging(), battery.discharging())
-				self.set_batt_capacity(battery.reporting_current(), battery.reporting_design(), battery.percent(), battery.reporting_unit())
-				self.set_batt_voltage(battery.voltage_current(), battery.voltage_design(), battery.voltage_unit())
-				self.set_batt_last(battery.reporting_full(), battery.reporting_design(), battery.level_full(), battery.voltage_unit(), battery.level_unit())
+				self.set_batt_charging(battery.level_state(),
+						       charging,
+						       battery.discharging())
+				self.set_batt_capacity(battery.reporting_current(),
+						       battery.reporting_design(),
+						       battery.percent(),
+						       battery.reporting_unit(),
+						       charging)
+				self.set_batt_voltage(battery.voltage_current(),
+						      battery.voltage_design(),
+						      battery.voltage_unit())
+				self.set_batt_last(battery.reporting_full(),
+						   battery.reporting_design(),
+						   battery.level_full(),
+						   battery.voltage_unit(),
+						   battery.level_unit())
 				gtk.gdk.threads_leave()
 
-			sleep(0.1)
+			sleep(0.5)
+		return 0
 
 	def stop(self):
 		self.runthread = False
@@ -334,7 +357,7 @@ def battery_window(nope):
 
 def about_window(myobject):
 	global window
-	version = "0.5"
+	version = "0.6"
 
 	window = hildon.StackableWindow()
 	window.set_title("NetMon About")
@@ -385,10 +408,6 @@ def main():
 
 	loop = gobject.MainLoop()
 
-	cell_label = []
-	for i in range(1, 100):
-		cell_label.append(None)
-
 	prog = hildon.Program.get_instance()
 
 	win = hildon.StackableWindow()
@@ -404,7 +423,7 @@ def main():
 	cell['cellinfo']['lac'] 	= { 'text': 'Location Area Code'}
 	cell['cellinfo']['cell'] 	= { 'text': 'Cell ID'}
 	cell['cellinfo']['rnc'] 	= { 'text': 'RNC ID'}
-	cell['cellinfo']['status'] 	= { 'text': 'Network Status'}
+	cell['cellinfo']['status'] 	= { 'text': 'Status'}
 	cell['cellinfo']['technology'] 	= { 'text': 'Technology'}
 	cell['cellinfo']['type'] 	= { 'text': 'Network Type'}
 	cell['cellinfo']['selected'] 	= { 'text': 'Selected'}
@@ -418,7 +437,7 @@ def main():
 		cell['cellinfo'][entry]['value'] = gtk.Label('?')
 		cell['cellinfo'][entry]['value'].set_alignment(1, 0.5)
 
-	table = gtk.Table(10,20,True)
+	table = gtk.Table(15,20,True)
 	table.attach(cell['cellinfo']['mcc']['label'], 1, 7, 1, 2)
 	table.attach(cell['cellinfo']['mcc']['value'], 8, 10, 1, 2)
 
@@ -428,42 +447,40 @@ def main():
 	table.attach(cell['cellinfo']['operator']['label'], 11, 15, 2, 3)
 	table.attach(cell['cellinfo']['operator']['value'], 15, 19, 2, 3)
 
-	table.attach(cell['cellinfo']['lac']['label'], 1, 7, 3, 4)
-	table.attach(cell['cellinfo']['lac']['value'], 8, 10, 3, 4)
+	table.attach(cell['cellinfo']['lac']['label'], 1, 7, 4, 5)
+	table.attach(cell['cellinfo']['lac']['value'], 8, 10, 4, 5)
 
-	table.attach(cell['cellinfo']['cell']['label'], 1, 7, 4, 5)
-	table.attach(cell['cellinfo']['cell']['value'], 8, 10, 4, 5)
+	table.attach(cell['cellinfo']['cell']['label'], 1, 7, 5, 6)
+	table.attach(cell['cellinfo']['cell']['value'], 8, 10, 5, 6)
 
-	table.attach(cell['cellinfo']['rnc']['label'], 11, 14, 4, 5)
-	table.attach(cell['cellinfo']['rnc']['value'], 15, 19, 4, 5)
+	table.attach(cell['cellinfo']['rnc']['label'], 11, 14, 5, 6)
+	table.attach(cell['cellinfo']['rnc']['value'], 15, 19, 5, 6)
 
-	table.attach(cell['cellinfo']['status']['label'], 1, 6, 5, 7)
-	table.attach(cell['cellinfo']['status']['value'], 6, 10, 5, 7)
+	table.attach(cell['cellinfo']['type']['label'], 1, 6, 6, 7)
+	table.attach(cell['cellinfo']['type']['value'], 6, 10, 6, 7)
 
-	table.attach(cell['cellinfo']['technology']['label'], 11, 16, 5, 7)
-	table.attach(cell['cellinfo']['technology']['value'], 15, 19, 5, 7)
+	table.attach(cell['cellinfo']['status']['label'], 11, 16, 6, 7)
+	table.attach(cell['cellinfo']['status']['value'], 15, 19, 6, 7)
 
-	table.attach(cell['cellinfo']['type']['label'], 1, 7, 6, 8)
-	table.attach(cell['cellinfo']['type']['value'], 8, 10, 6, 8)
+	table.attach(cell['cellinfo']['technology']['label'], 1, 7, 7, 8)
+	table.attach(cell['cellinfo']['technology']['value'], 8, 10, 7, 8)
 
-	table.attach(cell['cellinfo']['selected']['label'], 11, 16, 6, 8)
-	table.attach(cell['cellinfo']['selected']['value'], 15, 19, 6, 8)
+	table.attach(cell['cellinfo']['selected']['label'], 11, 16, 7, 8)
+	table.attach(cell['cellinfo']['selected']['value'], 15, 19, 7, 8)
 
-	table.attach(cell['cellinfo']['error']['label'], 1, 7, 7, 10)
-	table.attach(cell['cellinfo']['error']['value'], 7, 10, 7, 10)
+	table.attach(cell['cellinfo']['error']['label'], 1, 7, 9, 10)
+	table.attach(cell['cellinfo']['error']['value'], 7, 19, 9, 10)
 
-	table.attach(cell['cellinfo']['services']['label'], 1, 7, 8, 11)
-	table.attach(cell['cellinfo']['services']['value'], 6, 10, 8, 11)
+	table.attach(cell['cellinfo']['services']['label'], 1, 7, 10, 11)
+	table.attach(cell['cellinfo']['services']['value'], 6, 19, 10, 11)
+
+	table.attach(cell['cellinfo']['signal']['label'], 1, 7, 11, 13)
+	table.attach(cell['cellinfo']['signal']['value'], 6, 19, 11, 13)
+	table.attach(cell['signalbar'], 0, 20, 13, 16)
 	
 	table.set_col_spacing(1, 20)
-
-	hbox = gtk.HBox(False, 10)
-	vbox = gtk.VBox(False, 0)
-	hbox.pack_start(cell['cellinfo']['signal']['label'], False, False, 0)
-	hbox.pack_end(cell['signalbar'], True, True, 0)
-	vbox.pack_start(table, False, False, 0)
-	vbox.pack_end(hbox, False, False, 0)
-	win.add(vbox)
+	
+	win.add(table)
 
 	menu = main_menu()
 	win.set_app_menu(menu)
@@ -476,6 +493,7 @@ def main():
 	win.show_all()
 	loop.run()
 
-
-if __name__ == "__main__":
-	main()
+if (__name__ == "__main__"):
+	ret = main()
+	exit(ret)
+	

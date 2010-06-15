@@ -1,5 +1,5 @@
-netmon (0.6-1) stable; urgency=low
+netmon (0.7-1) stable; urgency=low
 
-  Capacity bar set to 'pulse' when charging. Minor changes in appearance.
+  Power saving improved.
 
- -- Peter Kozak <maemo@golwen.net>  Mon, 14 Jun 2010 00:46:52 +0000
+ -- Peter Kozak <maemo@golwen.net>  Tue, 15 Jun 2010 20:29:33 +0000

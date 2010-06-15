@@ -14,6 +14,7 @@ from time import sleep, time
 from cellinfo import CellInfo
 from battery import Battery
 from sys import exit
+from osso import Context, DeviceState
 
 class StatusUpdates(Thread):
 	global window
@@ -21,6 +22,8 @@ class StatusUpdates(Thread):
 	def __init__(self):
 		Thread.__init__(self)
 		self.runthread = True
+		self.cell = None
+		self.battery = None
 		
 	def status_object_cell(self, cellstatus):
 		self.cell = cellstatus
@@ -173,11 +176,10 @@ class StatusUpdates(Thread):
 		battery = Battery()
 		last = 0
 		while self.runthread:
-			
 			read_data = 1
 			now = int(time())
-			
-			if (window != False):
+
+			if (window != None):
 				if (window.get_stack() != None):
 					title = window.get_title()
 					if (title == 'NetMon Battery Status'):
@@ -192,11 +194,11 @@ class StatusUpdates(Thread):
 				refresh = 30
 
 			if ((last > 0) and (now < (last + refresh))):
-				sleep(0.1)
+				sleep(0.5)
 				continue
 
 			last = now
-						
+
 			if (read_data == 1):
 				percent, decibel, nil = cellinfo.signal_strength()
 				status, lac, cellid, mnc, mcc, nettype, netservices, neterror = cellinfo.registration_status()
@@ -221,24 +223,25 @@ class StatusUpdates(Thread):
 				charging = battery.charging()
 				self.set_batt_presence(battery.present(), battery.rechargeable())
 				self.set_batt_charging(battery.level_state(),
-						       charging,
-						       battery.discharging())
+						charging,
+						battery.discharging())
 				self.set_batt_capacity(battery.reporting_current(),
-						       battery.reporting_design(),
-						       battery.percent(),
-						       battery.reporting_unit(),
-						       charging)
+						battery.reporting_design(),
+						battery.percent(),
+						battery.reporting_unit(),
+						charging)
 				self.set_batt_voltage(battery.voltage_current(),
-						      battery.voltage_design(),
-						      battery.voltage_unit())
+						battery.voltage_design(),
+						battery.voltage_unit())
 				self.set_batt_last(battery.reporting_full(),
-						   battery.reporting_design(),
-						   battery.level_full(),
-						   battery.voltage_unit(),
-						   battery.level_unit())
+						battery.reporting_design(),
+						battery.level_full(),
+						battery.voltage_unit(),
+						battery.level_unit())
 				gtk.gdk.threads_leave()
 
 			sleep(0.5)
+
 		return 0
 
 	def stop(self):
@@ -357,7 +360,7 @@ def battery_window(nope):
 
 def about_window(myobject):
 	global window
-	version = "0.6"
+	version = "0.7"
 
 	window = hildon.StackableWindow()
 	window.set_title("NetMon About")
@@ -386,17 +389,29 @@ def main_menu():
 
 def main_quit(obj, status_updates, loop):
 	status_updates.stop()
+	sleep(1)
 	loop.quit()
 
-def main():
+def displaystate_change( value ):
 	global status_updates
-	global window
-	gtk.gdk.threads_init()
-	window = False
-	cell = dict()
+	
+	if (value == "off"):
+		status_updates.stop()
+		remove_signals()
 
-	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-	bus = dbus.SystemBus()
+	elif (value == "on"):
+		preserve_cell = status_updates.cell
+		preserve_battery = status_updates.battery
+		del(status_updates)
+		status_updates = StatusUpdates()
+		status_updates.status_object_cell(preserve_cell)
+		status_updates.status_object_battery(preserve_battery)
+		status_updates.start()
+		add_signals()
+
+def add_signals():
+	global bus
+	
 	bus.add_signal_receiver(signal_registration_status_change, dbus_interface = "Phone.Net", signal_name = "registration_status_change")
 	bus.add_signal_receiver(signal_signal_strength_change, dbus_interface = "Phone.Net", signal_name = "signal_strength_change")
 	bus.add_signal_receiver(signal_network_time_info_change, dbus_interface = "Phone.Net", signal_name = "network_time_info_change")
@@ -406,8 +421,36 @@ def main():
 	bus.add_signal_receiver(signal_cell_info_change, dbus_interface = "Phone.Net", signal_name = "cell_info_change")
 	bus.add_signal_receiver(signal_operator_name_change, dbus_interface = "Phone.Net", signal_name = "operator_name_change")
 
-	loop = gobject.MainLoop()
 
+def remove_signals():
+	global bus
+
+	bus.remove_signal_receiver(signal_registration_status_change, dbus_interface = "Phone.Net", signal_name = "registration_status_change")
+	bus.remove_signal_receiver(signal_signal_strength_change, dbus_interface = "Phone.Net", signal_name = "signal_strength_change")
+	bus.remove_signal_receiver(signal_network_time_info_change, dbus_interface = "Phone.Net", signal_name = "network_time_info_change")
+	bus.remove_signal_receiver(signal_cellular_system_state_change, dbus_interface = "Phone.Net", signal_name = "cellular_system_state_change")
+	bus.remove_signal_receiver(signal_radio_access_technology_change, dbus_interface = "Phone.Net", signal_name = "radio_access_technology_change")
+	bus.remove_signal_receiver(signal_radio_info_change, dbus_interface = "Phone.Net", signal_name = "radio_info_change")
+	bus.remove_signal_receiver(signal_cell_info_change, dbus_interface = "Phone.Net", signal_name = "cell_info_change")
+	bus.remove_signal_receiver(signal_operator_name_change, dbus_interface = "Phone.Net", signal_name = "operator_name_change")
+
+def main():
+	global status_updates
+	global window
+	global bus
+	gtk.gdk.threads_init()
+	window = None
+	cell = dict()
+
+	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+	bus = dbus.SystemBus()
+	add_signals()
+
+	busobj = bus.get_object('com.nokia.mce', '/com/nokia/mce/signal')
+	busiface = dbus.Interface(busobj, 'com.nokia.mce.signal')
+	busiface.connect_to_signal('display_status_ind', displaystate_change)
+
+	loop = gobject.MainLoop()
 	prog = hildon.Program.get_instance()
 
 	win = hildon.StackableWindow()
@@ -492,7 +535,7 @@ def main():
 	win.connect("destroy", main_quit, status_updates, loop)
 	win.show_all()
 	loop.run()
-
+	
 if (__name__ == "__main__"):
 	ret = main()
 	exit(ret)

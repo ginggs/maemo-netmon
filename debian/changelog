@@ -1,5 +1,5 @@
-netmon (0.7-1) stable; urgency=low
+netmon (0.8-1) stable; urgency=low
 
-  Power saving improved.
+  Networks window added
 
- -- Peter Kozak <maemo@golwen.net>  Tue, 15 Jun 2010 20:29:33 +0000
+ -- Peter Kozak <maemo@golwen.net>  Wed, 16 Jun 2010 12:55:17 +0000

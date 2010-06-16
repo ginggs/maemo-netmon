@@ -13,6 +13,7 @@ from threading import Thread
 from time import sleep, time
 from cellinfo import CellInfo
 from battery import Battery
+from siminfo import SimInfo
 from sys import exit
 from osso import Context, DeviceState
 
@@ -174,7 +175,7 @@ class StatusUpdates(Thread):
 	def run(self):
 		cellinfo = CellInfo()
 		battery = Battery()
-		last = 0
+		self.last = 0
 		while self.runthread:
 			read_data = 1
 			now = int(time())
@@ -188,16 +189,19 @@ class StatusUpdates(Thread):
 					elif (title == 'NetMon About'):
 						read_data = 0
 						refresh = 30
+					elif (title == 'NetMon Networks'):
+						read_data = 0
+						refresh = 30
 				else:
 					refresh = 30
 			else:
 				refresh = 30
 
-			if ((last > 0) and (now < (last + refresh))):
+			if ((self.last > 0) and (now < (self.last + refresh))):
 				sleep(0.5)
 				continue
 
-			last = now
+			self.last = now
 
 			if (read_data == 1):
 				percent, decibel, nil = cellinfo.signal_strength()
@@ -266,34 +270,49 @@ def signal_network_time_info_change(*values):
 def signal_cellular_system_state_change(*values):
 	#print "signal_cellular_system_state_change"
 	#print values
-	pass
+	status_updates.last = 0
 
 def signal_radio_access_technology_change(*values):
 	#print "signal_radio_access_technology_change"
 	#print values
-	pass
+	status_updates.last = 0
 
 def signal_radio_info_change(*values):
 	#print "signal_radio_info_change"
 	#print values
-	pass
+	status_updates.last = 0
 
 def signal_cell_info_change(*values):
 	#print "signal_cell_info_change"
 	#print values
 
-	status_updates.set_usedradio(values[0])
-	status_updates.set_cell(values[1])
-	status_updates.set_lac(values[2])
-	status_updates.set_mnc(values[3])
-	status_updates.set_mcc(values[4])
+	status_updates.last = 0
+	#status_updates.set_usedradio(values[0])
+	#status_updates.set_cell(values[1])
+	#status_updates.set_lac(values[2])
+	#status_updates.set_mnc(values[3])
+	#status_updates.set_mcc(values[4])
 	
-	
-
 def signal_operator_name_change(*values):
 	#print "signal_operator_name_change"
 	#print values
 	status_updates.set_operator(values[1])
+
+def available_networks_set(*values):
+		global networks
+		global window
+
+		store_networks = networks['gtklist']
+
+		del store_networks[0]
+		for network in range(0, len(values[1])):
+			new_iter = store_networks.append()
+			store_networks.set(new_iter, 0, str(network+1), 1, values[2][network], 2, str(int(values[1][network])), 3, values[3][network])
+		hildon.hildon_gtk_window_set_progress_indicator(window, 0)
+		networks['acquire'] = False
+		
+def available_networks_err(*values):
+		print values
 
 def battery_window(nope):
 	global window
@@ -358,9 +377,83 @@ def battery_window(nope):
 	window.add(table)
 	window.show_all()
 
+def networks_window(myobject):
+	global window
+	global networks
+	
+	if (not networks or not networks['acquire']):
+		cellinfo = CellInfo()
+		cellinfo.available_network(available_networks_set, available_networks_err)
+		status, lac, cellid, mnc, mcc, nettype, netservices, neterror = cellinfo.registration_status()
+
+		siminfo = SimInfo()
+		provider_name, nil, nil, nil = siminfo.provider_name()
+
+		store_networks = gtk.ListStore(gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING)
+		store_networks.set(store_networks.append(), 0, '1', 1, mcc, 2, mnc, 3, provider_name)
+		if (not networks):
+			networks = {}
+		networks['gtklist'] = store_networks
+		networks['acquire'] = True
+
+	else:
+		store_networks = networks['gtklist']
+
+	window = hildon.StackableWindow()
+	window.set_title("NetMon Networks")
+	hildon.hildon_gtk_window_set_progress_indicator(window, 1)
+
+	selector = hildon.TouchSelector()
+	renderer = gtk.CellRendererText()
+
+	column = selector.append_column(store_networks, renderer)
+	column.set_attributes(renderer, text=0)
+
+	renderer = gtk.CellRendererText()
+	renderer.set_property('xalign', 0)
+
+	column.pack_start(renderer, 1)
+	column.set_attributes(renderer, text=1)
+
+	renderer = gtk.CellRendererText()
+	renderer.set_property('xalign', 0)
+
+	column.pack_start(renderer, 2)
+	column.set_attributes(renderer, text=2)
+
+	renderer = gtk.CellRendererText()
+	renderer.set_property('xalign', 0)
+
+	column.pack_start(renderer, 3)
+	column.set_attributes(renderer, text=3)
+
+	selector.set_column_selection_mode(hildon.TOUCH_SELECTOR_SELECTION_MODE_SINGLE)
+	column.set_property("text-column", 0)
+
+	label1 = gtk.Label("Index")
+	label2 = gtk.Label("MCC")
+	label3 = gtk.Label("MNC")
+	label4 = gtk.Label("Operator")
+	label1.set_alignment(0, 0)
+	label2.set_alignment(0, 0)
+	label3.set_alignment(0, 0)
+	label4.set_alignment(0, 0)
+	table = gtk.Table(1,4,True)
+	table.attach(label1, 0, 1, 0, 1)
+	table.attach(label2, 1, 2, 0, 1)
+	table.attach(label3, 2, 3, 0, 1)
+	table.attach(label4, 3, 4, 0, 1)
+	vbox = gtk.VBox(False, 0)
+	vbox.pack_start(table, False, False, 0)
+	vbox.pack_end(selector, True, True, 0)
+	window.add(vbox)
+	
+	window.show_all()
+	
+	
 def about_window(myobject):
 	global window
-	version = "0.7"
+	version = "0.8"
 
 	window = hildon.StackableWindow()
 	window.set_title("NetMon About")
@@ -379,10 +472,14 @@ def main_menu():
 	menu.append(button1)
 
 	button2 = hildon.GtkButton(gtk.HILDON_SIZE_AUTO)
-	button2.set_label("About")
-	button2.connect("clicked", about_window)
+	button2.set_label("Networks")
+	button2.connect("clicked", networks_window)
 	menu.append(button2)
 
+	button3 = hildon.GtkButton(gtk.HILDON_SIZE_AUTO)
+	button3.set_label("About")
+	button3.connect("clicked", about_window)
+	menu.append(button3)
 	menu.show_all()
 
 	return menu
@@ -438,9 +535,12 @@ def main():
 	global status_updates
 	global window
 	global bus
+	global networks
+	
 	gtk.gdk.threads_init()
 	window = None
 	cell = dict()
+	networks = None
 
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 	bus = dbus.SystemBus()

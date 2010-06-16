@@ -64,6 +64,10 @@ install: build
 	cp -a "src/opt/netmon/bin/netmongui.py" "$(CURDIR)/debian/netmon/opt/netmon/bin/netmongui.py"
 	mkdir -p "$(CURDIR)/debian/netmon/opt/netmon/bin/"
 	cp -a "src/opt/netmon/bin/netmongui.pyo" "$(CURDIR)/debian/netmon/opt/netmon/bin/netmongui.pyo"
+	mkdir -p "$(CURDIR)/debian/netmon/opt/netmon/bin/"
+	cp -a "src/opt/netmon/bin/siminfo.py" "$(CURDIR)/debian/netmon/opt/netmon/bin/siminfo.py"
+	mkdir -p "$(CURDIR)/debian/netmon/opt/netmon/bin/"
+	cp -a "src/opt/netmon/bin/siminfo.pyo" "$(CURDIR)/debian/netmon/opt/netmon/bin/siminfo.pyo"
 	mkdir -p "$(CURDIR)/debian/netmon/usr/share/icons/hicolor/48x48/hildon/"
 	cp -a "src/usr/share/icons/hicolor/48x48/hildon/netmon.png" "$(CURDIR)/debian/netmon/usr/share/icons/hicolor/48x48/hildon/netmon.png"
 

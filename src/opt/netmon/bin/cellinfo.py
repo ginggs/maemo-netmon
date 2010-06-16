@@ -61,4 +61,8 @@ class CellInfo():
 
 	def radio_technology(self):
 		return self.cellinfo.get_radio_access_technology()
+
+	def available_network(self, reply_handler, error_handler):
+	
+		return self.cellinfo.get_available_network(timeout=300, reply_handler=reply_handler,error_handler=error_handler)
 		

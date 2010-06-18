@@ -16,6 +16,8 @@ from battery import Battery
 from siminfo import SimInfo
 from sys import exit
 from osso import Context, DeviceState
+from helper import array_value
+from notification import Notification
 
 class StatusUpdates(Thread):
 	global window
@@ -25,6 +27,12 @@ class StatusUpdates(Thread):
 		self.runthread = True
 		self.cell = None
 		self.battery = None
+		self.set_settings(None)
+
+	def set_settings(self, settings):
+		self.cell_refresh = array_value(settings, ('cell','refresh'), 30, int)
+		self.battery_refresh = array_value(settings, ('battery','refresh'), 2, int)
+		self.other_refresh = array_value(settings, ('other','refresh'), 30, int)
 		
 	def status_object_cell(self, cellstatus):
 		self.cell = cellstatus
@@ -33,27 +41,39 @@ class StatusUpdates(Thread):
 		self.battery = batterystatus
 
 	def set_signal_strength(self, percent, decibel):
-		self.cell['cellinfo']['signal']['value'].set_text('%d %%' % percent)
+
 		fraction = 1.0 / 100 * percent
 		text = " - %d dBm" % decibel
+
+		gtk.gdk.threads_enter()
+		self.cell['cellinfo']['signal']['value'].set_text('%d %%' % percent)
 		self.cell['signalbar'].set_fraction(fraction)
 		self.cell['signalbar'].set_text(text)
+		gtk.gdk.threads_leave()
 
 	def set_mnc(self, value):
+		gtk.gdk.threads_enter()
 		self.cell['cellinfo']['mnc']['value'].set_text('%d' % value)
+		gtk.gdk.threads_leave()
 
 	def set_mcc(self, value):
+		gtk.gdk.threads_enter()
 		self.cell['cellinfo']['mcc']['value'].set_text('%d' % value)
+		gtk.gdk.threads_leave()
 
 	def set_cell(self, value):
 		cell_id = value & 65535
 		cell_rnc = value >> 16
-	
+		
+		gtk.gdk.threads_enter()
 		self.cell['cellinfo']['cell']['value'].set_text('%d' % cell_id)
 		self.cell['cellinfo']['rnc']['value'].set_text('%d' % cell_rnc)
+		gtk.gdk.threads_leave()
 
 	def set_lac(self, value):
+		gtk.gdk.threads_enter()
 		self.cell['cellinfo']['lac']['value'].set_text('%d' % value)
+		gtk.gdk.threads_leave()
 
 	def set_services(self, value):
 		services = ''
@@ -62,11 +82,14 @@ class StatusUpdates(Thread):
 		if (value & 0x04): services += 'EGPRS '
 		if (value & 0x08): services += 'HSDPA '
 		if (value & 0x10): services += 'HSUPA'
-
+		gtk.gdk.threads_enter()
 		self.cell['cellinfo']['services']['value'].set_text(services)
-
+		gtk.gdk.threads_leave()
+		
 	def set_neterror(self, value):
+		gtk.gdk.threads_enter()
 		self.cell['cellinfo']['error']['value'].set_text('%d' % value)
+		gtk.gdk.threads_leave()
 
 	def set_nettype(self, value):
 		if (value == 0): network_type = 'home'
@@ -74,8 +97,9 @@ class StatusUpdates(Thread):
 		elif (value == 2): network_type = 'forbidden'
 		elif (value == 2): network_type = 'other'
 		else: value = 'no network'
-
+		gtk.gdk.threads_enter()
 		self.cell['cellinfo']['type']['value'].set_text(network_type)
+		gtk.gdk.threads_leave()
 
 	def set_netstatus(self, value):
 		if (value == 0): status = 'home'
@@ -86,30 +110,35 @@ class StatusUpdates(Thread):
 		elif (value == 5): status = 'no serv. no search'
 		elif (value == 6): status = 'no sim'
 		elif (value == 8): status = 'power off'
-		elif (value == 9): status = 'NSPS'             # no service power save
+		elif (value == 9): status = 'so serv. pv. sav.'
 		elif (value == 10): status = 'NSPS no cover.'
 		elif (value == 11): status = 'sim rejected'
 		else: status = 'unknown'
-
+		gtk.gdk.threads_enter()
 		self.cell['cellinfo']['status']['value'].set_text(status)
+		gtk.gdk.threads_leave()
 
 	def set_selectedradio(self, value):
 		if (value == 0): technology = "DUAL"
 		elif (value == 1): technology = "GSM"
 		elif (value == 2): technology = "3G"
 		else: technology = "?"
-
+		gtk.gdk.threads_enter()
 		self.cell['cellinfo']['selected']['value'].set_text(technology)
+		gtk.gdk.threads_leave()
 
 	def set_usedradio(self, value):
 		if (value == 1): technology = "GSM"
 		elif (value == 2): technology = "3G"
 		else: technology = "?"	
-
+		gtk.gdk.threads_enter()
 		self.cell['cellinfo']['technology']['value'].set_text(technology)
+		gtk.gdk.threads_leave()
 
 	def set_operator(self, value):
+		gtk.gdk.threads_enter()
 		self.cell['cellinfo']['operator']['value'].set_text(value)
+		gtk.gdk.threads_leave()
 
 	def set_batt_presence(self, present, rechargeable):
 		if (present == 0):
@@ -121,13 +150,13 @@ class StatusUpdates(Thread):
 			rechargeable = "not rechargeable"
 		else:
 			rechargeable = "rechargeable"
-	
+
+		gtk.gdk.threads_enter()
 		self.battery['presence']['value1'].set_text(presence)
 		self.battery['presence']['value2'].set_text(rechargeable)
+		gtk.gdk.threads_leave()
 
 	def set_batt_charging(self, state, charging, discharging):
-		self.battery['charging']['value1'].set_text(state)
-
 		if (charging and discharging):
 			charging_state = "charging+discharging"
 		elif (charging):
@@ -137,12 +166,16 @@ class StatusUpdates(Thread):
 		else:
 			charging_state = "unknown"
 
+		gtk.gdk.threads_enter()
+		self.battery['charging']['value1'].set_text(state)
 		self.battery['charging']['value2'].set_text(charging_state)
+		gtk.gdk.threads_leave()
 
 	def set_batt_capacity(self, current, design, percent, unit, charging = False):
 
 		self.battery['capacity']['value2'].set_text('%d %s' % (design, unit))
 
+		gtk.gdk.threads_enter()
 		if (charging):
 			self.battery['capacity']['value1'].set_text('(%d %s)' % (current, unit))
 			self.battery['capacity']['bar'].pulse()
@@ -154,27 +187,71 @@ class StatusUpdates(Thread):
 			text = '%d %%' % percent
 			self.battery['capacity']['bar'].set_fraction(fraction)
 			self.battery['capacity']['bar'].set_text(text)
-		
+		gtk.gdk.threads_leave()
 
 	def set_batt_voltage(self, current, design, unit):
+		gtk.gdk.threads_enter()
 		self.battery['voltage']['value1'].set_text('%d %s' % (current, unit))
 		self.battery['voltage']['value2'].set_text('%d %s' % (design, unit))
 
 		self.battery['voltage']['bar'].set_fraction(1.0 / design * current)
 		text = " %d %%" % (100.0 / design * current)
 		self.battery['voltage']['bar'].set_text(text)
+		gtk.gdk.threads_leave()
 		
 	def set_batt_last(self, full, design, level, unit, levelunit):
+		gtk.gdk.threads_enter()
 		self.battery['last']['value1'].set_text('%d %s' % (full, unit))
 		self.battery['last']['value2'].set_text('%d %s' % (level, levelunit))
-
 		self.battery['last']['bar'].set_fraction(1.0 / design * full)
 		text = " %d %%" % (100.0 / design * full)
 		self.battery['last']['bar'].set_text(text)
+		gtk.gdk.threads_leave()
+		
+	def update_cell_info(self):
+		percent, decibel, nil = self.cellinfo.signal_strength()
+		status, lac, cellid, mnc, mcc, nettype, netservices, neterror = self.cellinfo.registration_status()
+		selectedradio, nil = self.cellinfo.selected_radio_rechnology()
+		usedradio, nil = self.cellinfo.radio_technology()
+		self.set_mnc(mnc)
+		self.set_mcc(mcc)
+		self.set_cell(cellid)
+		self.set_lac(lac)
+		self.set_services(netservices)
+		self.set_neterror(neterror)
+		self.set_nettype(nettype)
+		self.set_netstatus(status)
+		self.set_selectedradio(selectedradio)
+		self.set_usedradio(usedradio)
+		self.set_signal_strength(percent, decibel)
+
+	def update_battery_info(self):
+		charging = self.batteryinfo.charging()
+		self.set_batt_presence(self.batteryinfo.present(), self.batteryinfo.rechargeable())
+
+		self.set_batt_charging(self.batteryinfo.level_state(),
+				charging,
+				self.batteryinfo.discharging())
+
+		self.set_batt_capacity(self.batteryinfo.reporting_current(),
+				self.batteryinfo.reporting_design(),
+				self.batteryinfo.percent(),
+				self.batteryinfo.reporting_unit(),
+				charging)
+
+		self.set_batt_voltage(self.batteryinfo.voltage_current(),
+				self.batteryinfo.voltage_design(),
+				self.batteryinfo.voltage_unit())
+
+		self.set_batt_last(self.batteryinfo.reporting_full(),
+				self.batteryinfo.reporting_design(),
+				self.batteryinfo.level_full(),
+				self.batteryinfo.reporting_unit(),
+				self.batteryinfo.level_unit())
 
 	def run(self):
-		cellinfo = CellInfo()
-		battery = Battery()
+		self.cellinfo = CellInfo()
+		self.batteryinfo = Battery()
 		self.last = 0
 		while self.runthread:
 			read_data = 1
@@ -185,17 +262,17 @@ class StatusUpdates(Thread):
 					title = window.get_title()
 					if (title == 'NetMon Battery Status'):
 						read_data = 2
-						refresh = 2
+						refresh = self.battery_refresh
 					elif (title == 'NetMon About'):
 						read_data = 0
-						refresh = 30
+						refresh = self.other_refresh
 					elif (title == 'NetMon Networks'):
 						read_data = 0
-						refresh = 30
+						refresh = self.other_refresh
 				else:
-					refresh = 30
+					refresh = self.cell_refresh
 			else:
-				refresh = 30
+				refresh = self.cell_refresh
 
 			if ((self.last > 0) and (now < (self.last + refresh))):
 				sleep(0.5)
@@ -204,45 +281,10 @@ class StatusUpdates(Thread):
 			self.last = now
 
 			if (read_data == 1):
-				percent, decibel, nil = cellinfo.signal_strength()
-				status, lac, cellid, mnc, mcc, nettype, netservices, neterror = cellinfo.registration_status()
-				selectedradio, nil = cellinfo.selected_radio_rechnology()
-				usedradio, nil = cellinfo.radio_technology()
-				gtk.gdk.threads_enter()
-				self.set_mnc(mnc)
-				self.set_mcc(mcc)
-				self.set_cell(cellid)
-				self.set_lac(lac)
-				self.set_services(netservices)
-				self.set_neterror(neterror)
-				self.set_nettype(nettype)
-				self.set_netstatus(status)
-				self.set_selectedradio(selectedradio)
-				self.set_usedradio(usedradio)
-				self.set_signal_strength(percent, decibel)
-				gtk.gdk.threads_leave()
+				self.update_cell_info()
 
 			elif (read_data == 2):
-				gtk.gdk.threads_enter()
-				charging = battery.charging()
-				self.set_batt_presence(battery.present(), battery.rechargeable())
-				self.set_batt_charging(battery.level_state(),
-						charging,
-						battery.discharging())
-				self.set_batt_capacity(battery.reporting_current(),
-						battery.reporting_design(),
-						battery.percent(),
-						battery.reporting_unit(),
-						charging)
-				self.set_batt_voltage(battery.voltage_current(),
-						battery.voltage_design(),
-						battery.voltage_unit())
-				self.set_batt_last(battery.reporting_full(),
-						battery.reporting_design(),
-						battery.level_full(),
-						battery.voltage_unit(),
-						battery.level_unit())
-				gtk.gdk.threads_leave()
+				self.update_battery_info()
 
 			sleep(0.5)
 
@@ -299,20 +341,40 @@ def signal_operator_name_change(*values):
 	status_updates.set_operator(values[1])
 
 def available_networks_set(*values):
-		global networks
-		global window
+	global networks
+	global window		
 
-		store_networks = networks['gtklist']
+	networks['gtklist'].clear()
+	
+	gtk.gdk.threads_enter()
+	for network in range(0, len(values[1])):
+		networks['gtklist'].set(networks['gtklist'].append(), 0, str(network+1), 1, values[2][network], 2, str(int(values[1][network])), 3, values[3][network])
+	hildon.hildon_gtk_window_set_progress_indicator(window, 0)
+	gtk.gdk.threads_leave()
+	networks['acquire'] = False
+	networks['time'] = int(time())
 
-		del store_networks[0]
-		for network in range(0, len(values[1])):
-			new_iter = store_networks.append()
-			store_networks.set(new_iter, 0, str(network+1), 1, values[2][network], 2, str(int(values[1][network])), 3, values[3][network])
-		hildon.hildon_gtk_window_set_progress_indicator(window, 0)
-		networks['acquire'] = False
-		
+	notify = Notification()
+	notify.info('%d Cellular Network(s) found' % len(networks['gtklist']))
+	
 def available_networks_err(*values):
-		print values
+	global networks
+	
+	networks['time'] = int(time())
+	networks['acquire'] = False
+
+	notify = Notification()
+	notify.info('No Cellular Network found' % len(networks['gtklist']))
+
+def get_networks(myobject = False, window = False):
+	global networks
+	global status_updates
+	
+	if (not networks['acquire']):
+		status_updates.cellinfo.available_network(available_networks_set, available_networks_err)
+		networks['acquire'] = int(time())
+		if (window):
+			hildon.hildon_gtk_window_set_progress_indicator(window, 1)
 
 def battery_window(nope):
 	global window
@@ -380,28 +442,36 @@ def battery_window(nope):
 def networks_window(myobject):
 	global window
 	global networks
+
+	window = hildon.StackableWindow()
+	window.set_title("NetMon Networks")
+
+	menu = hildon.AppMenu()
+
+	button1 = hildon.GtkButton(gtk.HILDON_SIZE_AUTO)
+	button1.set_label("Refresh")
+	button1.connect("clicked", get_networks, window)
+	menu.append(button1)
+
+	menu.show_all()
+	window.set_app_menu(menu)
 	
-	if (not networks or not networks['acquire']):
-		cellinfo = CellInfo()
-		cellinfo.available_network(available_networks_set, available_networks_err)
-		status, lac, cellid, mnc, mcc, nettype, netservices, neterror = cellinfo.registration_status()
-
-		siminfo = SimInfo()
-		provider_name, nil, nil, nil = siminfo.provider_name()
-
+	if (not networks):
 		store_networks = gtk.ListStore(gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING)
-		store_networks.set(store_networks.append(), 0, '1', 1, mcc, 2, mnc, 3, provider_name)
+		
 		if (not networks):
 			networks = {}
+			
 		networks['gtklist'] = store_networks
-		networks['acquire'] = True
+		networks['time'] = 0
+		networks['acquire'] = False
+		get_networks()
 
 	else:
 		store_networks = networks['gtklist']
 
-	window = hildon.StackableWindow()
-	window.set_title("NetMon Networks")
-	hildon.hildon_gtk_window_set_progress_indicator(window, 1)
+	if (networks['acquire']):
+		hildon.hildon_gtk_window_set_progress_indicator(window, 1)
 
 	selector = hildon.TouchSelector()
 	renderer = gtk.CellRendererText()
@@ -453,7 +523,7 @@ def networks_window(myobject):
 	
 def about_window(myobject):
 	global window
-	version = "0.8"
+	version = "0.9"
 
 	window = hildon.StackableWindow()
 	window.set_title("NetMon About")
@@ -508,29 +578,39 @@ def displaystate_change( value ):
 
 def add_signals():
 	global bus
-	
-	bus.add_signal_receiver(signal_registration_status_change, dbus_interface = "Phone.Net", signal_name = "registration_status_change")
-	bus.add_signal_receiver(signal_signal_strength_change, dbus_interface = "Phone.Net", signal_name = "signal_strength_change")
-	bus.add_signal_receiver(signal_network_time_info_change, dbus_interface = "Phone.Net", signal_name = "network_time_info_change")
-	bus.add_signal_receiver(signal_cellular_system_state_change, dbus_interface = "Phone.Net", signal_name = "cellular_system_state_change")
-	bus.add_signal_receiver(signal_radio_access_technology_change, dbus_interface = "Phone.Net", signal_name = "radio_access_technology_change")
-	bus.add_signal_receiver(signal_radio_info_change, dbus_interface = "Phone.Net", signal_name = "radio_info_change")
-	bus.add_signal_receiver(signal_cell_info_change, dbus_interface = "Phone.Net", signal_name = "cell_info_change")
-	bus.add_signal_receiver(signal_operator_name_change, dbus_interface = "Phone.Net", signal_name = "operator_name_change")
+
+	try:
+		bus.add_signal_receiver(signal_registration_status_change, dbus_interface = "Phone.Net", signal_name = "registration_status_change")
+		bus.add_signal_receiver(signal_signal_strength_change, dbus_interface = "Phone.Net", signal_name = "signal_strength_change")
+		bus.add_signal_receiver(signal_network_time_info_change, dbus_interface = "Phone.Net", signal_name = "network_time_info_change")
+		bus.add_signal_receiver(signal_cellular_system_state_change, dbus_interface = "Phone.Net", signal_name = "cellular_system_state_change")
+		bus.add_signal_receiver(signal_radio_access_technology_change, dbus_interface = "Phone.Net", signal_name = "radio_access_technology_change")
+		bus.add_signal_receiver(signal_radio_info_change, dbus_interface = "Phone.Net", signal_name = "radio_info_change")
+		bus.add_signal_receiver(signal_cell_info_change, dbus_interface = "Phone.Net", signal_name = "cell_info_change")
+		bus.add_signal_receiver(signal_operator_name_change, dbus_interface = "Phone.Net", signal_name = "operator_name_change")
+	except:
+		return False
+
+	return True
 
 
 def remove_signals():
 	global bus
 
-	bus.remove_signal_receiver(signal_registration_status_change, dbus_interface = "Phone.Net", signal_name = "registration_status_change")
-	bus.remove_signal_receiver(signal_signal_strength_change, dbus_interface = "Phone.Net", signal_name = "signal_strength_change")
-	bus.remove_signal_receiver(signal_network_time_info_change, dbus_interface = "Phone.Net", signal_name = "network_time_info_change")
-	bus.remove_signal_receiver(signal_cellular_system_state_change, dbus_interface = "Phone.Net", signal_name = "cellular_system_state_change")
-	bus.remove_signal_receiver(signal_radio_access_technology_change, dbus_interface = "Phone.Net", signal_name = "radio_access_technology_change")
-	bus.remove_signal_receiver(signal_radio_info_change, dbus_interface = "Phone.Net", signal_name = "radio_info_change")
-	bus.remove_signal_receiver(signal_cell_info_change, dbus_interface = "Phone.Net", signal_name = "cell_info_change")
-	bus.remove_signal_receiver(signal_operator_name_change, dbus_interface = "Phone.Net", signal_name = "operator_name_change")
+	try:
+		bus.remove_signal_receiver(signal_registration_status_change, dbus_interface = "Phone.Net", signal_name = "registration_status_change")
+		bus.remove_signal_receiver(signal_signal_strength_change, dbus_interface = "Phone.Net", signal_name = "signal_strength_change")
+		bus.remove_signal_receiver(signal_network_time_info_change, dbus_interface = "Phone.Net", signal_name = "network_time_info_change")
+		bus.remove_signal_receiver(signal_cellular_system_state_change, dbus_interface = "Phone.Net", signal_name = "cellular_system_state_change")
+		bus.remove_signal_receiver(signal_radio_access_technology_change, dbus_interface = "Phone.Net", signal_name = "radio_access_technology_change")
+		bus.remove_signal_receiver(signal_radio_info_change, dbus_interface = "Phone.Net", signal_name = "radio_info_change")
+		bus.remove_signal_receiver(signal_cell_info_change, dbus_interface = "Phone.Net", signal_name = "cell_info_change")
+		bus.remove_signal_receiver(signal_operator_name_change, dbus_interface = "Phone.Net", signal_name = "operator_name_change")
+	except:
+		return False
 
+	return True
+	
 def main():
 	global status_updates
 	global window

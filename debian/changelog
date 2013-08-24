@@ -1,5 +1,13 @@
+netmon (0.9-2) fremantle; urgency=low
+
+  * Add missing python-osso dependency.
+  * Fix bug tracker link.
+
+ -- Graham Inggs <graham@nerve.org.za>  Sat, 24 Aug 2013 23:11:43 +0200
+
 netmon (0.9-1) stable; urgency=low
 
-  Stability improved.
+  * Stability improved.
 
  -- Peter Kozak <maemo@golwen.net>  Fri, 18 Jun 2010 09:25:23 +0000
+

@@ -1,3 +1,12 @@
+netmon (0.9-3) fremantle; urgency=low
+
+  * src/opt/netmon/bin/netmongui.py line 99: 
+    - Fix network_type for no network.
+  * Do not install Python optimized byte code (*.pyo) files.
+  * Build-depends on python-support and build with dh_pysypport.
+
+ -- Graham Inggs <graham@nerve.org.za>  Thu, 29 Aug 2013 11:11:42 +0200
+
 netmon (0.9-2) fremantle; urgency=low
 
   * Add missing python-osso dependency.

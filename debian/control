@@ -3,12 +3,17 @@ Section: user/utilities
 Priority: extra
 Maintainer: Graham Inggs <graham@nerve.org.za>
 XSBC-Original-Maintainer: Peter Kozak <maemo@golwen.net>
-Build-Depends: debhelper (>= 5)
+Build-Depends: debhelper (>= 5), python-support
 Standards-Version: 3.7.2
 
 Package: netmon
 Architecture: all
-Depends: python2.5, python-dbus, python2.5-gtk2, python-hildon, python-osso
+Depends: python-dbus,
+         python-gtk2,
+         python-hildon,
+         python-osso,
+         ${misc:Depends},
+         ${python:Depends}
 Description: NetMon Cellular Network Monitor for Maemo.
  Displays Signal Strength in dBm, Cell ID, LAC, RNC, Network Code, etc.
 XSBC-Bugtracker: https://garage.maemo.org/tracker/?group_id=1326

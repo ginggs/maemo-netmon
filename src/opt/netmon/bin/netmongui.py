@@ -96,7 +96,7 @@ class StatusUpdates(Thread):
 		elif (value == 1): network_type = 'preferred'
 		elif (value == 2): network_type = 'forbidden'
 		elif (value == 2): network_type = 'other'
-		else: value = 'no network'
+		else: network_type = 'no network'
 		gtk.gdk.threads_enter()
 		self.cell['cellinfo']['type']['value'].set_text(network_type)
 		gtk.gdk.threads_leave()

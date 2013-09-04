@@ -18,6 +18,7 @@ from sys import exit
 from osso import Context, DeviceState
 from helper import array_value
 from notification import Notification
+from dbus import glib
 
 class StatusUpdates(Thread):
 	global window
@@ -30,7 +31,7 @@ class StatusUpdates(Thread):
 		self.set_settings(None)
 
 	def set_settings(self, settings):
-		self.cell_refresh = array_value(settings, ('cell','refresh'), 30, int)
+		self.cell_refresh = array_value(settings, ('cell','refresh'), 10, int)
 		self.battery_refresh = array_value(settings, ('battery','refresh'), 2, int)
 		self.other_refresh = array_value(settings, ('other','refresh'), 30, int)
 		
@@ -142,7 +143,7 @@ class StatusUpdates(Thread):
 
 	def set_batt_presence(self, present, rechargeable):
 		if (present == 0):
-			presece = "not present"
+			presence = "not present"
 		else:
 			presence = "present"
 
@@ -172,10 +173,9 @@ class StatusUpdates(Thread):
 		gtk.gdk.threads_leave()
 
 	def set_batt_capacity(self, current, design, percent, unit, charging = False):
-
+		gtk.gdk.threads_enter()
 		self.battery['capacity']['value2'].set_text('%d %s' % (design, unit))
 
-		gtk.gdk.threads_enter()
 		if (charging):
 			self.battery['capacity']['value1'].set_text('(%d %s)' % (current, unit))
 			self.battery['capacity']['bar'].pulse()
@@ -278,13 +278,13 @@ class StatusUpdates(Thread):
 				sleep(0.5)
 				continue
 
-			self.last = now
-
 			if (read_data == 1):
 				self.update_cell_info()
 
 			elif (read_data == 2):
 				self.update_battery_info()
+
+			self.last = int(time())
 
 			sleep(0.5)
 
@@ -617,6 +617,8 @@ def main():
 	global bus
 	global networks
 	
+	gobject.threads_init()
+	glib.init_threads()
 	gtk.gdk.threads_init()
 	window = None
 	cell = dict()
@@ -719,4 +721,4 @@ def main():
 if (__name__ == "__main__"):
 	ret = main()
 	exit(ret)
-	
+

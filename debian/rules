@@ -40,46 +40,6 @@ install: build
 	dh_testdir
 	dh_testroot
 	dh_clean -k
-	dh_installdirs
-
-	# ======================================================
-	#$(MAKE) DESTDIR="$(CURDIR)/debian/netmon" install
-	mkdir -p "$(CURDIR)/debian/netmon"
-
-#	mkdir -p "$(CURDIR)/debian/netmon/usr/share/applications/hildon/"
-	cp -a "src/usr/share/applications/hildon/netmon.desktop" "$(CURDIR)/debian/netmon/usr/share/applications/hildon/netmon.desktop"
-	mkdir -p "$(CURDIR)/debian/netmon/usr/share/icons/hicolor/scalable/hildon/"
-	cp -a "src/usr/share/icons/hicolor/scalable/hildon/netmon.png" "$(CURDIR)/debian/netmon/usr/share/icons/hicolor/scalable/hildon/netmon.png"
-	mkdir -p "$(CURDIR)/debian/netmon/opt/netmon/bin/"
-	cp -a "src/opt/netmon/bin/battery.py" "$(CURDIR)/debian/netmon/opt/netmon/bin/battery.py"
-	mkdir -p "$(CURDIR)/debian/netmon/opt/netmon/bin/"
-#	cp -a "src/opt/netmon/bin/battery.pyo" "$(CURDIR)/debian/netmon/opt/netmon/bin/battery.pyo"
-	mkdir -p "$(CURDIR)/debian/netmon/opt/netmon/bin/"
-	cp -a "src/opt/netmon/bin/cellinfo.py" "$(CURDIR)/debian/netmon/opt/netmon/bin/cellinfo.py"
-	mkdir -p "$(CURDIR)/debian/netmon/opt/netmon/bin/"
-#	cp -a "src/opt/netmon/bin/cellinfo.pyo" "$(CURDIR)/debian/netmon/opt/netmon/bin/cellinfo.pyo"
-	mkdir -p "$(CURDIR)/debian/netmon/opt/netmon/bin/"
-	cp -a "src/opt/netmon/bin/helper.py" "$(CURDIR)/debian/netmon/opt/netmon/bin/helper.py"
-	mkdir -p "$(CURDIR)/debian/netmon/opt/netmon/bin/"
-#	cp -a "src/opt/netmon/bin/helper.pyo" "$(CURDIR)/debian/netmon/opt/netmon/bin/helper.pyo"
-	mkdir -p "$(CURDIR)/debian/netmon/opt/netmon/bin/"
-	cp -a "src/opt/netmon/bin/netmon" "$(CURDIR)/debian/netmon/opt/netmon/bin/netmon"
-	mkdir -p "$(CURDIR)/debian/netmon/opt/netmon/bin/"
-	cp -a "src/opt/netmon/bin/netmongui.py" "$(CURDIR)/debian/netmon/opt/netmon/bin/netmongui.py"
-	mkdir -p "$(CURDIR)/debian/netmon/opt/netmon/bin/"
-#	cp -a "src/opt/netmon/bin/netmongui.pyo" "$(CURDIR)/debian/netmon/opt/netmon/bin/netmongui.pyo"
-	mkdir -p "$(CURDIR)/debian/netmon/opt/netmon/bin/"
-	cp -a "src/opt/netmon/bin/notification.py" "$(CURDIR)/debian/netmon/opt/netmon/bin/notification.py"
-	mkdir -p "$(CURDIR)/debian/netmon/opt/netmon/bin/"
-#	cp -a "src/opt/netmon/bin/notification.pyo" "$(CURDIR)/debian/netmon/opt/netmon/bin/notification.pyo"
-	mkdir -p "$(CURDIR)/debian/netmon/opt/netmon/bin/"
-	cp -a "src/opt/netmon/bin/siminfo.py" "$(CURDIR)/debian/netmon/opt/netmon/bin/siminfo.py"
-	mkdir -p "$(CURDIR)/debian/netmon/opt/netmon/bin/"
-#	cp -a "src/opt/netmon/bin/siminfo.pyo" "$(CURDIR)/debian/netmon/opt/netmon/bin/siminfo.pyo"
-	mkdir -p "$(CURDIR)/debian/netmon/usr/share/icons/hicolor/48x48/hildon/"
-	cp -a "src/usr/share/icons/hicolor/48x48/hildon/netmon.png" "$(CURDIR)/debian/netmon/usr/share/icons/hicolor/48x48/hildon/netmon.png"
-
-	# ======================================================
 
 # Build architecture-independent files here.
 binary-indep: build install
@@ -92,7 +52,7 @@ binary-arch: build install
 	dh_installchangelogs debian/changelog
 	dh_installdocs
 	dh_installexamples
-#	dh_install
+	dh_install
 #	dh_installmenu
 #	dh_installdebconf
 #	dh_installlogrotate

@@ -47,7 +47,7 @@ class CellInfo():
 
 	def __init__(self):
 		bus = dbus.SystemBus()
-		dbus_object = bus.get_object('com.nokia.phone.net', '/com/nokia/phone/net')
+		dbus_object = bus.get_object('com.nokia.phone.net', '/com/nokia/phone/net', introspect=False)
 		self.cellinfo = dbus.Interface(dbus_object, 'Phone.Net')
 
 	def signal_strength(self):

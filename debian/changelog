@@ -1,9 +1,26 @@
+netmon (0.9-4) fremantle; urgency=low
+
+  * Switch from dh_installdirs to dh_install.
+  * src/opt/netmon/bin/cellinfo.py line 50:
+    - Do not attempt to introspect /com/nokia/phone/net object.
+  * src/opt/netmon/bin/netmongui.py line 145:
+    - Fix typo: 'presece' instead of 'presence'.
+  * src/opt/netmon/bin/netmongui.py line 33:
+    - Reduce Cell Info display refresh interval from 30s to 10s.
+  * Improve stability of Battery Status display
+    (src/opt/netmon/bin/netmongui.py):
+    - run(): Start measuring refresh interval after update is complete.
+    - set_batt_capacity(): Move gtk.gdk.threads_enter() to start of function.
+    - main(): Call gobject.threads_init() and  glib.init_threads().
+
+ -- Graham Inggs <graham@nerve.org.za>  Wed, 04 Sep 2013 19:03:49 +0200
+
 netmon (0.9-3) fremantle; urgency=low
 
   * src/opt/netmon/bin/netmongui.py line 99: 
     - Fix network_type for no network.
   * Do not install Python optimized byte code (*.pyo) files.
-  * Build-depends on python-support and build with dh_pysypport.
+  * Build-depends on python-support and build with dh_pysupport.
 
  -- Graham Inggs <graham@nerve.org.za>  Thu, 29 Aug 2013 11:11:42 +0200
 

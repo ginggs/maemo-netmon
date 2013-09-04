@@ -1,0 +1,4 @@
+
+src/opt/netmon/bin/*.py /opt/netmon/bin
+src/opt/netmon/bin/netmon /opt/netmon/bin
+src/usr/share/* /usr/share

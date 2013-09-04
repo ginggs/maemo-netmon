@@ -17,6 +17,7 @@ Depends: python-dbus,
 Description: NetMon Cellular Network Monitor for Maemo.
  Displays Signal Strength in dBm, Cell ID, LAC, RNC, Network Code, etc.
 XSBC-Bugtracker: https://garage.maemo.org/tracker/?group_id=1326
+XB-Maemo-Display-Name: NetMon
 XB-Maemo-Icon-26:
  iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A
  /wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAACa1JREFUaN7tmX1wVeURxn97cvNFgEASPCcQ
